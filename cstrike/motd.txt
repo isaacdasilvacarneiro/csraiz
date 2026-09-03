@@ -1,0 +1,74 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>CSRaiz</title>
+</head>
+
+<body bgcolor="#111111" text="#FFFFFF">
+
+<center>
+
+<br><br>
+
+<font size="6" color="#00FF00">
+<b>CSRaiz</b>
+</font>
+
+<br>
+
+<font size="4">
+Servidor Counter-Strike 1.6
+</font>
+
+<br><br>
+
+<hr width="80%">
+
+<br>
+
+<font size="5">
+<b>Bem-vindo!</b>
+</font>
+
+<br><br>
+
+<font size="3">
+Servidor hospedado por <b>CSRaiz</b>
+</font>
+
+<br><br>
+
+<a href="https://csraiz.xyz" target="_blank">
+<font size="4" color="#00FFFF">
+<b>🌐 csraiz.xyz</b>
+</font>
+</a>
+
+<br><br>
+
+<font size="3">
+Confira nossos servidores e novidades:
+</font>
+
+<br><br>
+
+<a href="https://csraiz.xyz" target="_blank">
+<font color="#00FFFF">
+<b>ACESSE NOSSO SITE</b>
+</font>
+</a>
+
+<br><br>
+
+<hr width="80%">
+
+<br>
+
+<font size="2" color="#AAAAAA">
+CSRaiz • Counter-Strike 1.6
+</font>
+
+</center>
+
+</body>
+</html>
