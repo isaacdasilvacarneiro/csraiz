@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+
   workflow_dispatch:
 
 permissions:
@@ -14,16 +15,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Baixar repositório
         uses: actions/checkout@v6
 
       - name: Criar arquivo cs16-base.tar.xz
         run: |
           tar --exclude='./.git' \
-              -cJf cs16-base.tar.xz \
+              --exclude='./.github' \
+              -cJf /tmp/cs16-base.tar.xz \
               .
 
-          ls -lh cs16-base.tar.xz
+          echo "Arquivo criado:"
+          ls -lh /tmp/cs16-base.tar.xz
 
       - name: Configurar chave SSH
         run: |
@@ -40,7 +44,7 @@ jobs:
         run: |
           scp \
             -i ~/.ssh/id_ed25519 \
-            cs16-base.tar.xz \
+            /tmp/cs16-base.tar.xz \
             github-deploy@188.220.169.152:/srv/gameap/fastdownload/cs16-base.tar.xz.tmp
 
       - name: Publicar nova versão
