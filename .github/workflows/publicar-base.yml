@@ -1,0 +1,51 @@
+name: Publicar base CS 1.6
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Criar arquivo cs16-base.tar.xz
+        run: |
+          tar --exclude='./.git' \
+              -cJf cs16-base.tar.xz \
+              .
+
+          ls -lh cs16-base.tar.xz
+
+      - name: Configurar chave SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          ssh-keyscan -H 188.220.169.152 >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Enviar base para a VPS
+        run: |
+          scp \
+            -i ~/.ssh/id_ed25519 \
+            cs16-base.tar.xz \
+            github-deploy@188.220.169.152:/srv/gameap/fastdownload/cs16-base.tar.xz.tmp
+
+      - name: Publicar nova versão
+        run: |
+          ssh \
+            -i ~/.ssh/id_ed25519 \
+            github-deploy@188.220.169.152 \
+            'mv -f /srv/gameap/fastdownload/cs16-base.tar.xz.tmp /srv/gameap/fastdownload/cs16-base.tar.xz && chmod 644 /srv/gameap/fastdownload/cs16-base.tar.xz && ls -lh /srv/gameap/fastdownload/cs16-base.tar.xz'
