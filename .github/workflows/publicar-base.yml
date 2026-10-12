@@ -15,7 +15,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Baixar repositório
         uses: actions/checkout@v6
 
@@ -30,26 +29,69 @@ jobs:
           ls -lh /tmp/cs16-base.tar.xz
 
       - name: Configurar chave SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
         run: |
+          set -eu
+
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
 
-          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
+          if [ -z "$VPS_SSH_KEY" ]; then
+            echo "ERRO: o Secret VPS_SSH_KEY está vazio ou não configurado."
+            exit 1
+          fi
+
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
+
+          echo "Verificando a validade da chave privada..."
+          if ! ssh-keygen -y -f ~/.ssh/id_ed25519 > /tmp/vps_public_key.pub; then
+            echo "ERRO: VPS_SSH_KEY não contém uma chave privada válida."
+            exit 1
+          fi
+
+          echo "Impressão digital da chave usada pelo GitHub Actions:"
+          ssh-keygen -lf /tmp/vps_public_key.pub
+
+          echo "Impressão digital da chave autorizada na VPS:"
+          echo "SHA256:5MGP+2gbLjhYhAk5LWQHyBg5gqb6wIqQU4vZvYpBnUc"
 
           ssh-keyscan -H 188.220.169.152 >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
+      - name: Testar autenticação SSH
+        run: |
+          set -eu
+
+          ssh \
+            -i ~/.ssh/id_ed25519 \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            -o ConnectTimeout=15 \
+            github-deploy@188.220.169.152 \
+            'whoami'
+
       - name: Enviar base para a VPS
         run: |
+          set -eu
+
           scp \
             -i ~/.ssh/id_ed25519 \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
             /tmp/cs16-base.tar.xz \
             github-deploy@188.220.169.152:/srv/gameap/fastdownload/cs16-base.tar.xz.tmp
 
       - name: Publicar nova versão
         run: |
+          set -eu
+
           ssh \
             -i ~/.ssh/id_ed25519 \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
             github-deploy@188.220.169.152 \
-            'mv -f /srv/gameap/fastdownload/cs16-base.tar.xz.tmp /srv/gameap/fastdownload/cs16-base.tar.xz && chmod 644 /srv/gameap/fastdownload/cs16-base.tar.xz && ls -lh /srv/gameap/fastdownload/cs16-base.tar.xz'
+            'mv -f /srv/gameap/fastdownload/cs16-base.tar.xz.tmp /srv/gameap/fastdownload/cs16-base.tar.xz &&
+             chmod 644 /srv/gameap/fastdownload/cs16-base.tar.xz &&
+             ls -lh /srv/gameap/fastdownload/cs16-base.tar.xz'
