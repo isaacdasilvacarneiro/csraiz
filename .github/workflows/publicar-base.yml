@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-
   workflow_dispatch:
 
 permissions:
@@ -16,82 +15,48 @@ jobs:
 
     steps:
       - name: Baixar repositório
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
-      - name: Criar arquivo cs16-base.tar.xz
+      - name: Compactar base
         run: |
-          tar --exclude='./.git' \
-              --exclude='./.github' \
-              -cJf /tmp/cs16-base.tar.xz \
-              .
+          tar -cJf /tmp/cs16-base.tar.xz \
+            --exclude='.git' \
+            --exclude='.github' \
+            -C "$GITHUB_WORKSPACE" .
 
-          echo "Arquivo criado:"
-          ls -lh /tmp/cs16-base.tar.xz
-
-      - name: Configurar chave SSH
+      - name: Configurar SSH
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
         run: |
-          set -eu
-
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-
-          if [ -z "$VPS_SSH_KEY" ]; then
-            echo "ERRO: o Secret VPS_SSH_KEY está vazio ou não configurado."
-            exit 1
-          fi
 
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
 
-          echo "Verificando a validade da chave privada..."
-          if ! ssh-keygen -y -f ~/.ssh/id_ed25519 > /tmp/vps_public_key.pub; then
-            echo "ERRO: VPS_SSH_KEY não contém uma chave privada válida."
-            exit 1
-          fi
+          ssh-keygen -y -f ~/.ssh/id_ed25519 > /dev/null
 
-          echo "Impressão digital da chave usada pelo GitHub Actions:"
-          ssh-keygen -lf /tmp/vps_public_key.pub
+          ssh-keyscan -H 82.27.38.3 >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
 
-          echo "Impressão digital da chave autorizada na VPS:"
-          echo "SHA256:5MGP+2gbLjhYhAk5LWQHyBg5gqb6wIqQU4vZvYpBnUc"
-
-          ssh-keyscan -H 188.220.169.152 >> ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
-
-      - name: Testar autenticação SSH
+      - name: Testar acesso à VPS
         run: |
-          set -eu
-
           ssh \
             -i ~/.ssh/id_ed25519 \
             -o IdentitiesOnly=yes \
-            -o BatchMode=yes \
-            -o ConnectTimeout=15 \
-            github-deploy@188.220.169.152 \
-            'whoami'
+            github-deploy@82.27.38.3 \
+            'test -w /srv/gameap/template && echo "Acesso à pasta template confirmado"'
 
-      - name: Enviar base para a VPS
+      - name: Enviar base para template
         run: |
-          set -eu
-
           scp \
             -i ~/.ssh/id_ed25519 \
             -o IdentitiesOnly=yes \
-            -o BatchMode=yes \
             /tmp/cs16-base.tar.xz \
-            github-deploy@188.220.169.152:/srv/gameap/fastdownload/cs16-base.tar.xz.tmp
-
-      - name: Publicar nova versão
-        run: |
-          set -eu
+            github-deploy@82.27.38.3:/srv/gameap/template/cs16-base.tar.xz.tmp
 
           ssh \
             -i ~/.ssh/id_ed25519 \
             -o IdentitiesOnly=yes \
-            -o BatchMode=yes \
-            github-deploy@188.220.169.152 \
-            'mv -f /srv/gameap/fastdownload/cs16-base.tar.xz.tmp /srv/gameap/fastdownload/cs16-base.tar.xz &&
-             chmod 644 /srv/gameap/fastdownload/cs16-base.tar.xz &&
-             ls -lh /srv/gameap/fastdownload/cs16-base.tar.xz'
+            github-deploy@82.27.38.3 \
+            'mv /srv/gameap/template/cs16-base.tar.xz.tmp /srv/gameap/template/cs16-base.tar.xz && chmod 644 /srv/gameap/template/cs16-base.tar.xz && ls -lh /srv/gameap/template/cs16-base.tar.xz'
