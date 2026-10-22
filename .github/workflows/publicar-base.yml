@@ -36,27 +36,37 @@ jobs:
 
           ssh-keygen -y -f ~/.ssh/id_ed25519 > /dev/null
 
-          ssh-keyscan -H 82.27.38.3 >> ~/.ssh/known_hosts
+          ssh-keyscan -H 82.27.38.3 167.148.161.246 >> ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
-      - name: Testar acesso à VPS
+      - name: Testar acesso às VPSs
         run: |
-          ssh \
-            -i ~/.ssh/id_ed25519 \
-            -o IdentitiesOnly=yes \
-            github-deploy@82.27.38.3 \
-            'test -w /srv/gameap/template && echo "Acesso à pasta template confirmado"'
+          for VPS in 82.27.38.3 167.148.161.246; do
+            echo "Testando $VPS..."
+            ssh \
+              -i ~/.ssh/id_ed25519 \
+              -o IdentitiesOnly=yes \
+              -o BatchMode=yes \
+              github-deploy@"$VPS" \
+              'test -w /srv/gameap/template && echo "Acesso à pasta template confirmado"'
+          done
 
-      - name: Enviar base para template
+      - name: Enviar base para as duas VPSs
         run: |
-          scp \
-            -i ~/.ssh/id_ed25519 \
-            -o IdentitiesOnly=yes \
-            /tmp/cs16-base.tar.xz \
-            github-deploy@82.27.38.3:/srv/gameap/template/cs16-base.tar.xz.tmp
+          for VPS in 82.27.38.3 167.148.161.246; do
+            echo "Publicando base em $VPS..."
 
-          ssh \
-            -i ~/.ssh/id_ed25519 \
-            -o IdentitiesOnly=yes \
-            github-deploy@82.27.38.3 \
-            'mv /srv/gameap/template/cs16-base.tar.xz.tmp /srv/gameap/template/cs16-base.tar.xz && chmod 644 /srv/gameap/template/cs16-base.tar.xz && ls -lh /srv/gameap/template/cs16-base.tar.xz'
+            scp \
+              -i ~/.ssh/id_ed25519 \
+              -o IdentitiesOnly=yes \
+              -o BatchMode=yes \
+              /tmp/cs16-base.tar.xz \
+              github-deploy@"$VPS":/srv/gameap/template/cs16-base.tar.xz.tmp
+
+            ssh \
+              -i ~/.ssh/id_ed25519 \
+              -o IdentitiesOnly=yes \
+              -o BatchMode=yes \
+              github-deploy@"$VPS" \
+              'mv /srv/gameap/template/cs16-base.tar.xz.tmp /srv/gameap/template/cs16-base.tar.xz && chmod 644 /srv/gameap/template/cs16-base.tar.xz && ls -lh /srv/gameap/template/cs16-base.tar.xz'
+          done
